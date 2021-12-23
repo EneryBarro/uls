@@ -59,10 +59,8 @@ typedef struct flags_s {
 
 int mx_table_size(item_t **items, int file_count, flags_t flags, int *col, int *row);
 int mx_items(item_t **items, int length, bool (*show)(item_t *), flags_t flags, int simp);
-char *mx_options(int argc, string_t *argv);
+char *mx_options(int argc, string_t *argv, flags_t *flags);
 char mx_type(unsigned int mode);
-void mx_print_str(int width, string_t str);
-void mx_print_left_str(int width, string_t str);
 void mx_long(item_t file, flags_t flags, int *collom_len);
 void mx_norm_items(item_t **items, int *count);
 void mx_process(string_t *files, int files_count, string_t current_dir, args_t is_args);

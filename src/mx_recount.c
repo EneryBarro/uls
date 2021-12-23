@@ -8,8 +8,9 @@ string_t mx_recount(int input) {
     while (num > 1024) {num /= 1024; counter++;}
     if (num < 10) {
         int variable = (int)(num*100);
-        if (variable % 10 < 5)
+        if (variable % 10 < 5) {
             variable += 10;
+        }
         number_of_part = mx_itoa(variable);
         number_of_part[2] = number_of_part[1];
         number_of_part[1] = '.';

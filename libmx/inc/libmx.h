@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <malloc/malloc.h>
 #include <dirent.h>
 #include <string.h>
 
@@ -132,5 +133,7 @@ void mx_show_usage(void);
 void mx_option_err(char option);
 int mx_count_items (char *dir_name);
 void print_colored_name(string_t name, char mode);
+void mx_print_str(int width, string_t str);
+void mx_print_left_str(int width, string_t str);
 
 #endif

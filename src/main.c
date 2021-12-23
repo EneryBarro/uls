@@ -3,8 +3,9 @@
 static flags_t flags;
 
 static bool item_cmp(item_t *a, item_t *b) {
-    if (flags.sizesort && a->stat.st_size != b->stat.st_size)
+    if (flags.sizesort && a->stat.st_size != b->stat.st_size) {
         return (a->stat.st_size < b->stat.st_size) != flags.revers;
+    }
     if (flags.timesort
         || flags.actime
         || flags.stattime) {
@@ -23,25 +24,35 @@ static bool item_cmp(item_t *a, item_t *b) {
             a_t = a->stat.st_ctime;
             b_t = b->stat.st_ctime;
         }
-        if (a_t != b_t)
+        if (a_t != b_t) {
             return (a_t < b_t) != flags.revers;
+        }
     }
     return (mx_strcmp(a->name, b->name) > 0) != flags.revers;
 }
 
 static int count_expands(item_t **items, int len, bool (*accept)(item_t *)) {
     int count = 0;
-    for (int i = 0; i < len; ++i)
-        if (items[i]->type == T_DIR && accept(items[i]) && !(mx_streq((items[i]->name), "..") || mx_streq((items[i]->name), ".")))
+    int i = 0;
+    while ( i < len ) {
+        if (items[i]->type == T_DIR && accept(items[i])
+            && !(mx_streq((items[i]->name), "..")
+                || mx_streq((items[i]->name), "."))) {
             count++;
+        }
+        i++;
+    }
     return count;
 }
 
 static bool accept_name(string_t name) {
-    if (flags.pathd)
+    if (flags.pathd) {
         return true;
-    if (flags.listd)
-        return !(mx_streq((name), "..") || mx_streq((name), "."));
+    }
+    if (flags.listd) {
+        return !(mx_streq((name), "..")
+            || mx_streq((name), "."));
+    }
     return name[0] != '.';
 }
 
@@ -55,7 +66,8 @@ static bool accept_no_dir(item_t *a) {
 
 void mx_process(string_t *names, int items_count, string_t current_dir, args_t is_args) {
     item_t **items = (item_t **) malloc(sizeof(item_t *) * items_count);
-    for (int i = 0; i < items_count; ++i) {
+    int i = 0;
+    while ( i < items_count ){
         item_t *file = items[i] = (item_t *) malloc(sizeof(item_t));
         file->path_name = mx_path(current_dir, names[i]);
         if (lstat(is_args.is_first ? names[i] : file->path_name, &(file->stat)) == -1) {
@@ -63,12 +75,14 @@ void mx_process(string_t *names, int items_count, string_t current_dir, args_t i
             free(file->path_name);
             free(file);
             items[i] = NULL;
+            i++;
             continue;
         }
         file->type = mx_type(file->stat.st_mode);
         file->name = names[i];
         file->user = mx_check_password(file->stat.st_uid);
         file->group = mx_check_group(file->stat.st_gid);
+        i++;
     }
     mx_norm_items(items, &items_count);
     mx_sort((void **) items, items_count, (cmp_t) &item_cmp);
@@ -80,8 +94,12 @@ void mx_process(string_t *names, int items_count, string_t current_dir, args_t i
         int dir_count = items_count - files_count;
         if (files_count && dir_count)
             mx_printchar('\n');
-        for (int i = 0; i < items_count; ++i) {
-            if (items[i]->type != T_DIR) continue;
+        i = 0;
+        while ( i < items_count ) {
+            if (items[i]->type != T_DIR){
+                i++;
+                continue;
+            }
             dir_num++;
             int count_files_in_directory;
             string_t *files = mx_dir(items[i]->name, &count_files_in_directory);
@@ -93,10 +111,11 @@ void mx_process(string_t *names, int items_count, string_t current_dir, args_t i
                 mx_process(files, count_files_in_directory, items[i]->name, is_args);
             if (dir_num != dir_count)
                 mx_printchar('\n');
-
-            for (int j = 0; j < count_files_in_directory; ++j)
+            for (int j = 0; j < count_files_in_directory; ++j){
                 free(files[j]);
+            }
             free(files);
+            i++;
         }
     } else {
         if (!flags.recurs) {
@@ -111,12 +130,15 @@ void mx_process(string_t *names, int items_count, string_t current_dir, args_t i
             mx_items(items, items_count, &accept_item, flags, 0);
             if (exps) mx_printchar('\n');
             int expnded_c = 0;
-            for (int i = 0; i < items_count; ++i) {
+            i = 0;
+            while (i < items_count){
                 item_t *file = items[i];
                 if (file->type != T_DIR
                     || !accept_item(file)
-                    || (mx_streq((file->name), "..") || mx_streq((file->name), ".")))
+                    || (mx_streq((file->name), "..") || mx_streq((file->name), "."))) {
+                    i++;
                     continue;
+                }
                 expnded_c++;
                 int count_files_in_directory;
                 string_t *dir_files = mx_dir(items[i]->path_name, &count_files_in_directory);
@@ -127,15 +149,18 @@ void mx_process(string_t *names, int items_count, string_t current_dir, args_t i
                 for (int j = 0; j < count_files_in_directory; ++j)
                     free(dir_files[j]);
                 free(dir_files);
+                i++;
             }
         }
     }
-    for (int i = 0; i < items_count; ++i) {
+    i = 0;
+    while (i < items_count){
         item_t *item = items[i];
         free(item->path_name);
         free(item->group);
         free(item->user);
         free(item);
+        i++;
     }
     free(items);
 }
@@ -165,63 +190,8 @@ int main(int argc, string_t *argv) {
     } else
         flags.width_console = 80;
 
-    char *opts = mx_options(argc, argv);
-    for (int i = 0; opts[i]; i++)
-        switch (opts[i]) {
-            case '1':
-                flags.single = 1;
-                flags.longf = 0;
-                break;
-            case 'C':
-                flags.longf = 0;
-                flags.single = 0;
-                break;
-            case 'l':
-                flags.longf = 1;
-                flags.single = 0;
-                break;
-            case 'c':
-                flags.stattime = 1;
-                flags.actime = 0;
-                break;
-            case 'u':
-                flags.actime = 1;
-                flags.stattime = 0;
-                break;
-            case 'R':
-                flags.recurs = 1;
-                break;
-            case 'a':
-                flags.pathd = 1;
-                break;
-            case 'A':
-                flags.pathd = 0;
-                flags.listd = 1;
-                break;
-            case 'h':
-                flags.hval = 1;
-                break;
-            case 'r':
-                flags.revers = 1;
-                break;
-            case 'S':
-                flags.sizesort = 1;
-                break;
-            case 'T':
-                flags.sectime = 1;
-                break;
-            case 't':
-                flags.timesort = 1;
-                break;
-            case 'G':
-                flags.color = 1;
-                break;
-            case '@':
-                flags.xattr = 1;
-                break;
-            case 'e':
-                flags.acl = 1;
-        }
+    char *opts = mx_options(argc, argv, &flags);
+
     mx_strdel(&opts);
     int items_count;
     string_t *files = mx_filenames(argc, argv, &items_count);
